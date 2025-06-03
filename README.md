@@ -1,6 +1,26 @@
 Very rough notes... need to clean up.
 
-## N8N and NVMe
+# Useful Links
+
+[Powerful Workflow Automation Software & Tools - n8n](https://n8n.io/)
+
+Self hosing docs: [n8n Hosting Documentation and Guides | n8n Docs](https://docs.n8n.io/hosting/?_gl=1*9p9kl1*_gcl_au*ODIxNTE5Nzk4LjE3NDg5NzQ1NDE.*_ga*MTY0NDczMzY1MC4xNzQ4OTc0NTM4*_ga_0SC4FF2FH9*czE3NDg5NzQ1MzckbzEkZzEkdDE3NDg5NzUwNTUkajU5JGwwJGgw)
+
+## Beginners guide
+Video: [5 simple AI Agents you must have - beginners guide - YouTube](https://www.youtube.com/watch?v=WLvQCIUWebs&t=494s)
+
+How to set up Google auth to access google email, calendar, etc.
+[Google OAuth2 single service | n8n Docs](https://docs.n8n.io/integrations/builtin/credentials/google/oauth-single-service/?utm_source=n8n_app&utm_medium=credential_settings&utm_campaign=create_new_credentials_modal)
+
+## Some sources of templates to look at
+
+- [enescingoz/awesome-n8n-templates: Supercharge your workflow automation with this curated collection of n8n templates! Instantly connect your favorite apps-like Gmail, Telegram, Google Drive, Slack, and more-with ready-to-use, AI-powered automations. Save time, boost productivity, and unlock the true potential of n8n in just a few clicks.](https://github.com/enescingoz/awesome-n8n-templates)
+- [Discover 2320 Automation Workflows from the n8n's Community](https://n8n.io/workflows/)
+
+complex one I'm looking at
+[Automated Stock Analysis Reports with Technical & News Sentiment using GPT-4o | n8n workflow template](https://n8n.io/workflows/3790-automated-stock-analysis-reports-with-technical-and-news-sentiment-using-gpt-4o/)
+
+# N8N and NVMe
 
 used NVM to run multiple versions of node
 
@@ -23,7 +43,7 @@ You can set $NVM_DIR to any location, but leaving it unchanged from
 /opt/homebrew/Cellar/nvm/0.40.3 will destroy any nvm-installed Node installations
 upon upgrade/reinstall.
 
-### n8n demo
+## n8n demo
 chat to look up your calendar info... cool!
 
 - [ ] try n8N tutorial 📅 2025-06-09
