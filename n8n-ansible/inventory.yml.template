@@ -1,0 +1,19 @@
+# =============================================================================
+# File: inventory.yml
+# =============================================================================
+all:
+  hosts:
+    ionos_vps:
+      ansible_host: YOUR_SERVER_IP
+      ansible_user: root
+      ansible_ssh_private_key_file: ~/.ssh/id_rsa
+  vars:
+    # Global variables
+    domain_name: "your-domain.com"  # Change this to your domain
+    use_gpu: false                  # Set to true if you have NVIDIA GPU
+    expose_qdrant: false           # Set to true to expose Qdrant API
+    expose_ollama: false           # Set to true to expose Ollama API
+    n8n_data_dir: "/opt/n8n-ai-starter" # Installation directory
+    n8n_secure_cookie: false  # Set to true if using HTTPS; needs to be false for Cloudflare Tunnel
+    use_cloudflare_tunnel: true
+    cloudflare_tunnel_token: YOUR_TOKEN_HERE    
