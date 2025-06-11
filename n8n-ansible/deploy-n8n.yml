@@ -1,0 +1,306 @@
+---
+- name: Deploy n8n AI Starter Kit on IONOS VPS
+  hosts: ionos_vps
+  become: yes
+  vars:
+    # TODO: remove vars commented out
+    n8n_user: "n8nuser"
+    server_ip: "{{ ansible_default_ipv4.address }}"
+    #domain_name: "n8n.bryan4schools.com" # Change this to your domain
+    # use_gpu: false  # Set to true if you have NVIDIA GPU
+    #n8n_data_dir: "/opt/n8n-ai-starter"
+    
+  tasks:
+    # System Setup
+    - name: Update apt cache and upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+        cache_valid_time: 3600
+
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - git
+          - htop
+          - ufw
+          - python3-pip
+        state: present
+
+    # User Management
+    - name: Create n8n user
+      user:
+        name: "{{ n8n_user }}"
+        groups: sudo
+        shell: /bin/bash
+        create_home: yes
+        append: yes
+
+    - name: Add n8n user to sudoers
+      lineinfile:
+        dest: /etc/sudoers
+        line: "{{ n8n_user }} ALL=(ALL) NOPASSWD:ALL"
+        validate: visudo -cf %s
+
+    # Docker Installation
+    - name: Download Docker install script
+      get_url:
+        url: https://get.docker.com
+        dest: /tmp/get-docker.sh
+        mode: '0755'
+
+    - name: Install Docker
+      shell: sh /tmp/get-docker.sh
+      args:
+        creates: /usr/bin/docker
+
+    - name: Add user to docker group
+      user:
+        name: "{{ n8n_user }}"
+        groups: docker
+        append: yes
+
+    - name: Install Docker Compose plugin
+      apt:
+        name: docker-compose-plugin
+        state: present
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    # NVIDIA GPU Setup (conditional)
+    - name: Setup NVIDIA Docker runtime
+      block:
+        - name: Get distribution info
+          shell: . /etc/os-release && echo $ID$VERSION_ID
+          register: distribution
+          changed_when: false
+
+        - name: Add NVIDIA Docker GPG key
+          apt_key:
+            url: https://nvidia.github.io/nvidia-docker/gpgkey
+            state: present
+
+        - name: Add NVIDIA Docker repository
+          apt_repository:
+            repo: "deb https://nvidia.github.io/nvidia-docker/{{ distribution.stdout }}/nvidia-docker.list /"
+            state: present
+            filename: nvidia-docker
+
+        - name: Install nvidia-docker2
+          apt:
+            name: nvidia-docker2
+            state: present
+            update_cache: yes
+
+        - name: Restart Docker for NVIDIA runtime
+          systemd:
+            name: docker
+            state: restarted
+      when: use_gpu | bool
+
+    # Firewall Configuration
+    # TODO: update to simpler rules
+    # sudo ufw allow ssh
+    # sudo ufw enable
+
+    - name: Configure UFW defaults
+      ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+      loop:
+        - { direction: 'incoming', policy: 'deny' }
+        - { direction: 'outgoing', policy: 'allow' }
+
+    - name: Allow SSH through firewall
+      ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: Allow n8n port
+      ufw:
+        rule: allow
+        port: '5678'
+        proto: tcp
+
+    - name: Allow HTTP/HTTPS ports
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - '80'
+        - '443'
+
+    - name: Allow Qdrant port (optional)
+      ufw:
+        rule: allow
+        port: '6333'
+        proto: tcp
+      when: expose_qdrant | default(false)
+
+    - name: Allow Ollama port (optional)
+      ufw:
+        rule: allow
+        port: '11434'
+        proto: tcp
+      when: expose_ollama | default(false)
+
+    - name: Enable firewall
+      ufw:
+        state: enabled
+
+    # Application Setup
+    - name: Create n8n data directory
+      file:
+        path: "{{ n8n_data_dir }}"
+        state: directory
+        owner: "{{ n8n_user }}"
+        group: "{{ n8n_user }}"
+        mode: '0755'
+
+    - name: Clone n8n AI starter kit repository
+      git:
+        repo: https://github.com/n8n-io/self-hosted-ai-starter-kit.git
+        dest: "{{ n8n_data_dir }}"
+        force: yes
+      become_user: "{{ n8n_user }}"
+
+    - name: Create Docker Compose override file
+      template:
+        src: docker-compose.override.yml.j2
+        dest: "{{ n8n_data_dir }}/docker-compose.override.yml"
+        owner: "{{ n8n_user }}"
+        group: "{{ n8n_user }}"
+        mode: '0644'
+
+    - name: Create nginx configuration directory
+      file:
+        path: "{{ n8n_data_dir }}/nginx-config"
+        state: directory
+        owner: "{{ n8n_user }}"
+        group: "{{ n8n_user }}"
+        mode: '0755'
+
+    - name: Create nginx configuration
+      template:
+        src: nginx.conf.j2
+        dest: "{{ n8n_data_dir }}/nginx-config/nginx.conf"
+        owner: "{{ n8n_user }}"
+        group: "{{ n8n_user }}"
+        mode: '0644'
+
+    # SSL Setup (Let's Encrypt)
+    - name: Install Certbot
+      apt:
+        name: certbot
+        state: present
+
+    - name: Stop any service on port 80 for certificate generation
+      shell: |
+        docker compose -f {{ n8n_data_dir }}/docker-compose.yml down || true
+        systemctl stop nginx || true
+      become_user: "{{ n8n_user }}"
+      ignore_errors: yes
+
+    - name: Generate SSL certificate
+      shell: |
+        certbot certonly --standalone --non-interactive --agree-tos \
+        --email admin@{{ domain_name }} \
+        -d {{ domain_name }}
+      when: domain_name != "your-domain.com"
+
+    - name: Create SSL directory
+      file:
+        path: "{{ n8n_data_dir }}/ssl"
+        state: directory
+        owner: "{{ n8n_user }}"
+        group: "{{ n8n_user }}"
+        mode: '0755'
+      when: domain_name != "your-domain.com"
+
+    - name: Copy SSL certificates
+      copy:
+        src: "/etc/letsencrypt/live/{{ domain_name }}/{{ item }}"
+        dest: "{{ n8n_data_dir }}/ssl/{{ item }}"
+        owner: "{{ n8n_user }}"
+        group: "{{ n8n_user }}"
+        mode: '0644'
+        remote_src: yes
+      loop:
+        - fullchain.pem
+        - privkey.pem
+      when: domain_name != "your-domain.com"
+
+    # Start Services
+    - name: Pull Docker images
+      shell: |
+        cd {{ n8n_data_dir }}
+        docker compose --profile {% if use_gpu %}gpu-nvidia{% else %}cpu{% endif %} pull
+      become_user: "{{ n8n_user }}"
+
+    - name: Start n8n AI starter kit
+      shell: |
+        cd {{ n8n_data_dir }}
+        docker compose --profile {% if use_gpu %}gpu-nvidia{% else %}cpu{% endif %} up -d
+      become_user: "{{ n8n_user }}"
+
+    - name: Wait for n8n to be ready
+      uri:
+        url: "http://{{ server_ip }}:5678"
+        method: GET
+        status_code: 200
+      retries: 30
+      delay: 10
+
+    # Post-deployment tasks
+    # TODO: check if downloaded already
+    - name: Download common AI models
+      shell: |
+        cd {{ n8n_data_dir }}
+        docker compose exec -T {% if use_gpu %}ollama-gpu{% else %}ollama-cpu{% endif %} ollama pull llama3.2:3b
+        docker compose exec -T {% if use_gpu %}ollama-gpu{% else %}ollama-cpu{% endif %} ollama pull mistral:7b
+      become_user: "{{ n8n_user }}"
+      async: 1800  # 30 minutes timeout
+      poll: 30
+
+    - name: Set up log rotation for Docker
+      copy:
+        content: |
+          /var/lib/docker/containers/*/*.log {
+            rotate 7
+            daily
+            compress
+            size=1M
+            missingok
+            delaycompress
+            copytruncate
+          }
+        dest: /etc/logrotate.d/docker
+        mode: '0644'
+
+    - name: Create backup script
+      template:
+        src: backup-n8n.sh.j2
+        dest: "{{ n8n_data_dir }}/backup-n8n.sh"
+        owner: "{{ n8n_user }}"
+        group: "{{ n8n_user }}"
+        mode: '0755'
+
+    - name: Add backup cron job
+      cron:
+        name: "n8n backup"
+        minute: "0"
+        hour: "2"
+        job: "{{ n8n_data_dir }}/backup-n8n.sh"
+        user: "{{ n8n_user }}"
+
+  handlers:
+    - name: restart docker
+      systemd:
+        name: docker
+        state: restarted

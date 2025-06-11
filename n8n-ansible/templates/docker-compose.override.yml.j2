@@ -1,0 +1,70 @@
+# =============================================================================
+# File: templates/docker-compose.override.yml.j2
+# =============================================================================
+
+services:
+  n8n:
+    ports:
+      - "0.0.0.0:5678:5678"
+    environment:
+      - N8N_HOST=0.0.0.0
+      - WEBHOOK_URL=http{% if domain_name != "your-domain.com" %}s{% endif %}://{% if domain_name != "your-domain.com" %}{{ domain_name }}{% else %}{{ server_ip }}:5678{% endif %}/
+      - N8N_PROTOCOL=http{% if domain_name != "your-domain.com" %}s{% endif %}
+      - NODE_ENV=production
+      - GENERIC_TIMEZONE=Europe/Berlin
+{% if domain_name != "your-domain.com" %}
+      - N8N_HOST={{ domain_name }}
+{% endif %}
+{% if n8n_secure_cookie | default(false) %}
+      - N8N_SECURE_COOKIE=true
+{% else %}
+      - N8N_SECURE_COOKIE=false
+{% endif %}
+
+{% if expose_qdrant | default(false) %}
+  qdrant:
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+{% endif %}
+
+{% if expose_ollama | default(false) %}
+  ollama:
+    ports:
+      - "11434:11434"
+    {% if use_gpu %}
+    environment:
+      - OLLAMA_MAX_LOADED_MODELS=2
+      - OLLAMA_MAX_VRAM=8192M
+    {% else %}
+    environment:
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_MAX_VRAM=4096M
+    {% endif %}
+{% endif %}
+
+{% if domain_name != "your-domain.com" %}
+  nginx:
+    image: nginx:alpine
+    container_name: n8n-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-config/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - n8n
+{% endif %}
+
+{% if use_cloudflare_tunnel == true %}
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    # docker-compose network name defined in docker-compose.yml from starter kit
+    networks: ['demo'] 
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token eyJhIjoiYWRjOGQzZDczZTgyNDQzZTdiNjZlZTc1ZTgyMzAxODUiLCJ0IjoiNTY4NmFhMzAtYzM4Ni00YmQ5LWJjYzctNzJiYmIyYjYzNTk2IiwicyI6Ik1EQTBZbUpqTkRNdFpqWTFZUzAwWmpRM0xXRXpOV010WVRGaFpURmtZV00wT1RRMSJ9
+    depends_on:
+      - n8n
+{% endif %}
