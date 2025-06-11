@@ -1,6 +1,4 @@
 
-
-
 # n8n AI Starter Kit Setup for IONOS VPS
 
 ## What You Get

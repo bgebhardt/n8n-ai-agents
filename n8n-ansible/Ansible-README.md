@@ -1,21 +1,27 @@
 
 # TODOs
 
-- cloudflare - set up subdomain - n8n.bryan4schools.com
-- reconfigure in ansible config
-- remember you opened port on ionos firewall 
-- fix inventory.yml to work
 - split up deployment script more granularly
-- create ansible commands for other things
-- move secrets to more secure storage
+- create ansible commands for other things - start up, restart, etc.
+- get workflow with OpenAI and Google working again.
 
+## Done
 
+- cloudflare - set up subdomain - n8n.bryan4schools.com
+- fix inventory.yml to work
+- move secrets to more secure storage - use inventory.yml for now
+- close port opened on ionos firewall
 
-https://n8n.bryan4schools.com/signup?inviterId=221a2cc8-04ef-4ef1-8588-fa6d3b26069a&inviteeId=23f26233-3806-412f-91dc-f83dedd1fa28
+---
 
-http://66.179.94.62:5678/signup?inviterId=221a2cc8-04ef-4ef1-8588-fa6d3b26069a&inviteeId=23f26233-3806-412f-91dc-f83dedd1fa28
+# Overview
 
-http://66.179.94.62:5678/settings/users
+This folder contains my ansible commands to set up the n8n on a self hosted VPS. Ansible uses the [n8n-io/self-hosted-ai-starter-kit: The Self-hosted AI Starter Kit is an open-source template that quickly sets up a local AI environment. Curated by n8n, it provides essential tools for creating secure, self-hosted AI workflows.](https://github.com/n8n-io/self-hosted-ai-starter-kit?tab=readme-ov-file). It then overrides parts of the docker installation with my customizations.
+
+I use cloudflared tunneling instead of nginx to manage access from my domain.
+
+More docs: [Self-hosted AI Starter Kit | n8n Docs](https://docs.n8n.io/hosting/starter-kits/ai-starter-kit/#whats-included)
+
 
 # How to Use
 1. Setup Ansible Environment
