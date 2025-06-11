@@ -4,9 +4,22 @@ Very rough notes... need to clean up.
 
 [Powerful Workflow Automation Software & Tools - n8n](https://n8n.io/)
 
+# Setup
+
 Self hosing docs: [n8n Hosting Documentation and Guides | n8n Docs](https://docs.n8n.io/hosting/?_gl=1*9p9kl1*_gcl_au*ODIxNTE5Nzk4LjE3NDg5NzQ1NDE.*_ga*MTY0NDczMzY1MC4xNzQ4OTc0NTM4*_ga_0SC4FF2FH9*czE3NDg5NzQ1MzckbzEkZzEkdDE3NDg5NzUwNTUkajU5JGwwJGgw)
 
-## Beginners guide
+See n8n-ansible directory for VPS/cloud hosting setup.
+
+## What comes with unlocking the license for free
+
+Explore Features: Take a look the features you've unlocked, Workflow history, Debug in editor, Folders and custom execution search.
+- [Your free n8n license key to unlock selected paid features - bryan.gebhardt@gmail.com - Gmail](https://mail.google.com/mail/u/0/#search/license/FMfcgzQbfffgBpVlHnvrgXmqmwbgxgbf)
+- [Workflow history | n8n Docs](https://docs.n8n.io/workflows/history/)
+- [Debug and re-run past executions | n8n Docs](https://docs.n8n.io/workflows/executions/debug/) - You can load data from a previous execution into your current workflow. This is useful for debugging data from failed production executions: you can see a failed execution, make changes to your workflow to fix it, then re-run it with the previous execution data.
+- [Release notes | n8n Docs](https://docs.n8n.io/release-notes/#n8n1850)
+- [Custom executions data | n8n Docs](https://docs.n8n.io/workflows/executions/custom-executions-data/) - You can set and then use custom data when filtering the executions list, or fetch it in your workflows using the Code node.
+
+# Beginners guide
 Video: [5 simple AI Agents you must have - beginners guide - YouTube](https://www.youtube.com/watch?v=WLvQCIUWebs&t=494s)
 
 How to set up Google auth to access google email, calendar, etc.
